@@ -1,0 +1,172 @@
+<!--
+	Simple SVG drawing board based on the work of Louis Hoebregts
+	https://css-tricks.com/creating-a-panning-effect-for-svg/
+-->
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"> 
+<meta charset="utf-8" />
+<style>
+body {
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
+}
+
+html, body, svg {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+svg {
+  touch-action: none;
+}
+</style>
+
+<script>
+// Screen dimensions
+var width  = 1080;
+var height = 1920;
+var points = [];
+var newShape = true;
+
+function stateWidth(state) { return state[0]._data.length; }
+function stateHeight(state) { return state.length; }
+
+//
+function getPos(a,b,posA,posB) {
+	var x = 0;
+	var y = 0;
+
+	if (a._vertical) {
+		x += -posB;
+		y += posA;
+	} 
+
+	if (!a._vertical) {
+		x += posA;
+		y += -posB;
+	}
+
+	return [x,y];
+}
+
+var point;
+var svg;
+window.onload = function () {
+	//
+	svg = document.querySelector("svg");
+	svg.setAttribute("viewBox","0 0 "+width+" "+height);
+
+	var mouse = document.querySelector(".mouse");
+	//
+	point = svg.createSVGPoint()
+
+	// 
+	if (window.PointerEvent) {
+		svg.addEventListener('pointerdown', onPointerDown); // Pointer is pressed
+		svg.addEventListener('pointerup', onPointerUp); // Releasing the pointer
+		svg.addEventListener('pointerleave', onPointerUp); // Pointer gets out of the SVG area
+		svg.addEventListener('pointermove', onPointerMove); // Pointer is moving
+	} else {
+		// Add all mouse events listeners fallback
+		svg.addEventListener('mousedown', onPointerDown); // Pressing the mouse
+		svg.addEventListener('mouseup', onPointerUp); // Releasing the mouse
+		svg.addEventListener('mouseleave', onPointerUp); // Mouse gets out of the SVG area
+		svg.addEventListener('mousemove', onPointerMove); // Mouse is moving
+
+		// Add all touch events listeners fallback
+		svg.addEventListener('touchstart', onPointerDown); // Finger is touching the screen
+		svg.addEventListener('touchend', onPointerUp); // Finger is no longer touching the screen
+		svg.addEventListener('touchmove', onPointerMove); // Finger is moving
+	}
+}
+
+// This variable will be used later for move events to check if pointer is down or not
+var isPointerDown = false;
+
+// This variable will contain the original coordinates when the user start pressing the mouse or touching the screen
+var pointerOrigin = {
+  x: 0,
+  y: 0
+};
+
+//
+function getPointFromEvent (event) {
+  if (event.targetTouches) {
+    point.x = event.targetTouches[0].clientX;
+    point.y = event.targetTouches[0].clientY;
+  } else {
+    point.x = event.clientX;
+    point.y = event.clientY;
+  }
+  
+  // We get the current transformation matrix of the SVG and we invert it
+  var invertedSVGMatrix = svg.getScreenCTM().inverse();
+  
+  return point.matrixTransform(invertedSVGMatrix);
+}
+
+// Function called by the event listeners when user start pressing/touching
+function onPointerDown(event) {
+  isPointerDown = true; // We set the pointer as down
+  
+  // We get the pointer position on click/touchdown so we can get the value once the user starts to drag
+  var pointerPosition = getPointFromEvent(event);
+  pointerOrigin.x = pointerPosition.x;
+  pointerOrigin.y = pointerPosition.y;
+}
+
+//
+function onPointerUp() {
+  // The pointer is no longer considered as down
+  isPointerDown = false;
+  newShape = true;
+  var path = document.querySelector("line");
+  path.setAttribute("style","display:none");
+}
+
+// Function called by the event listeners when user start moving/dragging
+function onPointerMove (event) {
+	// Only run this function if the pointer is down
+	if (!isPointerDown) {
+		return;
+	}
+
+	// This prevent user to do a selection on the page
+	event.preventDefault();
+
+	// Get the pointer position
+	var pointerPosition = getPointFromEvent(event);
+
+	points.push({x:pointerPosition.x,y:pointerPosition.y,newShape:newShape});
+
+	var str = '';
+	for (var i = 0 ; i < points.length ; i++) {
+		if (points[i].newShape) 
+			str += 'M'+points[i].x+','+points[i].y;
+		else
+			str += ' '+points[i].x+','+points[i].y;
+	}
+
+	var path = document.querySelector("#path");
+	path.setAttribute("d", str);
+
+	newShape = false;
+}
+</script>
+</head>
+<body>
+  <svg>
+		<!-- -->
+	<defs>
+		<radialGradient id="gradiente" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+		<stop offset="0%" style="stop-color:rgb(255,0,0);stop-opacity:0.3" />
+		<stop offset="100%" style="stop-color:rgb(255,0,0);stop-opacity:0" />
+		</radialGradient>
+	</defs>
+
+	<path id="path" fill="none" d="" stroke="black" stroke-linejoin="round" stroke-width="30" stroke-linecap="round" />
+  </svg>
+</body>
+</html>
