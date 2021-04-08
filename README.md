@@ -1,4 +1,4 @@
 # svgdoodle
 Very simple HTML5 app to create doodles
 
-![](https://gph.is/g/ZlMPoWK)
+![](https://media.giphy.com/media/amxnQhWZxCZH333pIQ/giphy.gif)
